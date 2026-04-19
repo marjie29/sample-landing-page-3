@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraXfer — Truck Relocation, Simplified.</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #ffffff;
+    --off: #f7f7f5;
+    --light: #eeede9;
+    --border: #e0ddd8;
+    --text: #1a1917;
+    --muted: #8a8780;
+    --blue: #1a6fff;
+    --blue-light: #e8f0ff;
+    --green: #16a34a;
+    --orange: #ea580c;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body { font-family: 'Instrument Sans', sans-serif; background: var(--off); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .logo-3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+  .logo-3 span { color: var(--blue); }
+  .header-meta {
+    font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 20px;
+  }
+  .header-meta a { color: var(--text); font-weight: 500; text-decoration: none; }
+  .header-cta {
+    background: var(--text); color: var(--white);
+    padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer;
+  }
+
+  /* PAGE GRID */
+  .page {
+    max-width: 1200px; margin: 0 auto;
+    padding: 48px 40px;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* LEFT: USPs + Map trigger */
+  .left-col { }
+  .brand-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-light); color: var(--blue);
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+    margin-bottom: 20px;
+  }
+  .left-headline {
+    font-family: 'Syne', sans-serif;
+    font-size: 40px; font-weight: 800; line-height: 1.1;
+    letter-spacing: -1px; margin-bottom: 8px;
+  }
+  .left-headline em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--blue); font-size: 44px; }
+  .left-sub {
+    font-size: 15px; color: var(--muted); line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  /* Map launch card */
+  .map-launch-card {
+    background: var(--text);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .map-launch-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.2); }
+  .mlc-preview {
+    width: 100%;
+    display: block;
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mlc-svg { width: 100%; height: 100%; display: block; }
+  .mlc-state { fill: #253040; stroke: #354050; stroke-width: 0.8; }
+  .mlc-dot { fill: #4a6080; }
+  .mlc-dot.active { fill: var(--blue); filter: drop-shadow(0 0 4px var(--blue)); }
+  .mlc-route { stroke: var(--blue); stroke-width: 2; fill: none; stroke-dasharray: 8 4; animation: dash3 1.5s linear infinite; }
+  @keyframes dash3 { to { stroke-dashoffset: -24; } }
+  .mlc-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.2);
+    transition: background 0.2s;
+  }
+  .map-launch-card:hover .mlc-overlay { background: rgba(0,0,0,0.1); }
+  .mlc-btn {
+    background: var(--blue); color: #fff;
+    padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mlc-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mlc-route-display { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--white); }
+  .mlc-route-display span { color: rgba(255,255,255,0.4); font-family: 'Instrument Sans', sans-serif; font-weight: 400; font-size: 12px; }
+  .mlc-dist { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+  /* USP list */
+  .usp-list { display: flex; flex-direction: column; gap: 12px; }
+  .usp-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px;
+    background: var(--white); border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .usp-ico {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--blue-light); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .usp-content { }
+  .usp-r-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .usp-r-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* Stats */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--border);
+    border-radius: 8px; overflow: hidden;
+    margin-top: 24px;
+    border: 1px solid var(--border);
+  }
+  .stat3 { background: var(--white); padding: 14px 12px; text-align: center; }
+  .stat3-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--blue); }
+  .stat3-label { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* RIGHT: WIZARD FORM */
+  .right-col { }
+  .form-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px; background: var(--light);
+  }
+  .progress-fill {
+    height: 100%; background: var(--blue);
+    transition: width 0.4s ease;
+  }
+
+  /* Step header */
+  .step-header {
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .step-indicator {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .si-step {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .si-step.active { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .si-step.done { border-color: var(--green); background: var(--green); color: #fff; }
+  .si-line { width: 24px; height: 2px; background: var(--border); transition: background 0.2s; }
+  .si-line.done { background: var(--green); }
+  .step-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--muted); }
+  .step-name.active { color: var(--text); }
+
+  /* Step body */
+  .step-body { padding: 28px 32px; }
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  .sp-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .sp-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+
+  /* form fields */
+  .ff { margin-bottom: 16px; }
+  .ff label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .ff input, .ff select, .ff textarea {
+    width: 100%;
+    background: var(--off);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text); font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px; padding: 10px 14px;
+    transition: all 0.15s; outline: none;
+    -webkit-appearance: none;
+  }
+  .ff input:focus, .ff select:focus, .ff textarea:focus {
+    border-color: var(--blue); background: var(--white);
+    box-shadow: 0 0 0 3px var(--blue-light);
+  }
+  .ff textarea { resize: vertical; min-height: 80px; }
+  .ff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ff-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* Radio groups */
+  .radio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .radio-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .radio-btn {
+    border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; text-align: center;
+    transition: all 0.15s; background: var(--off);
+    font-size: 13px; font-weight: 500; color: var(--muted);
+  }
+  .radio-btn:hover { border-color: var(--blue); color: var(--text); }
+  .radio-btn.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); font-weight: 600; }
+
+  /* Route summary in step 1 */
+  .route-summary-box {
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 16px; background: var(--off);
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 20px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .route-summary-box:hover { border-color: var(--blue); }
+  .rsb-icon { font-size: 24px; }
+  .rsb-content { flex: 1; }
+  .rsb-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .rsb-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .rsb-action { font-size: 12px; color: var(--blue); font-weight: 600; }
+
+  /* Step nav */
+  .step-nav {
+    padding: 16px 32px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
+  }
+  .btn-back {
+    background: none; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 10px 20px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .btn-back:hover { border-color: var(--text); color: var(--text); }
+  .btn-next {
+    background: var(--blue); color: var(--white);
+    border: none; border-radius: 8px; padding: 11px 24px;
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-next:hover { background: #1559e0; box-shadow: 0 4px 16px rgba(26,111,255,0.3); }
+  .btn-submit {
+    background: var(--green); color: #fff;
+    border: none; border-radius: 8px; padding: 11px 24px;
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    display: none;
+    align-items: center; gap: 8px;
+  }
+  .btn-submit:hover { background: #15803d; }
+  .btn-submit.show { display: flex; }
+
+  /* ========================
+     MAP MODAL
+  ======================== */
+  .map-modal {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(26,25,23,0.85); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .map-modal.open { display: flex; }
+  .mm-box {
+    background: var(--white);
+    border-radius: 16px; width: min(880px, 95vw);
+    max-height: 90vh; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+  }
+  .mm-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mm-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
+  .mm-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .mm-close {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: none;
+    cursor: pointer; font-size: 18px; display: flex;
+    align-items: center; justify-content: center; color: var(--muted);
+    transition: all 0.15s;
+  }
+  .mm-close:hover { background: var(--light); color: var(--text); }
+  .mm-route-bar {
+    padding: 12px 28px;
+    background: var(--off);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 16px; align-items: center;
+  }
+  .mm-point {
+    display: flex; align-items: center; gap: 8px;
+    flex: 1;
+  }
+  .mm-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .mm-dot.pickup { background: var(--green); }
+  .mm-dot.dropoff { background: var(--red); }
+  .mm-point-text { font-size: 14px; font-weight: 600; }
+  .mm-point-sub { font-size: 12px; color: var(--muted); }
+  .mm-arrow-sep { color: var(--muted); font-size: 20px; }
+  .mm-body { flex: 1; overflow: hidden; position: relative; }
+  svg#map3 { width: 100%; height: 100%; display: block; min-height: 380px; }
+  .m3-state { fill: #e8efe0; stroke: #c8d8b8; stroke-width: 1; cursor: pointer; transition: fill 0.2s; }
+  .m3-state:hover { fill: #dce8cc; }
+  .m3-city { cursor: pointer; }
+  .m3-dot { fill: #94a88c; stroke: var(--white); stroke-width: 2; transition: all 0.2s; r: 6; }
+  .m3-dot:hover { fill: var(--blue); r: 8; }
+  .m3-dot.pickup { fill: var(--green); r: 9; filter: drop-shadow(0 0 6px rgba(22,163,74,0.6)); }
+  .m3-dot.dropoff { fill: var(--red); r: 9; filter: drop-shadow(0 0 6px rgba(220,38,38,0.6)); }
+  .m3-label { font-family: 'Instrument Sans', sans-serif; font-size: 12px; fill: #5a7050; font-weight: 500; pointer-events: none; }
+  .m3-label.active { fill: var(--text); font-weight: 600; }
+  .m3-route { stroke: var(--blue); stroke-width: 2.5; fill: none; stroke-dasharray: 10 5; animation: dash3 1.5s linear infinite; filter: drop-shadow(0 0 3px rgba(26,111,255,0.4)); }
+  .mm-footer {
+    padding: 14px 28px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mm-dist { font-size: 14px; font-weight: 600; }
+  .mm-dist span { color: var(--blue); font-family: 'Syne', sans-serif; font-size: 18px; }
+  .mm-confirm {
+    background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; padding: 10px 22px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'Syne', sans-serif; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mm-confirm:hover { background: #1559e0; }
+
+  /* Hint floating */
+  .mm-hint {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(26,25,23,0.8); color: #fff;
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* SUCCESS */
+  .sov3 {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(26,25,23,0.9); backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+  }
+  .sov3.show { display: flex; }
+  .s3-card {
+    background: var(--white); border-radius: 16px;
+    padding: 48px 40px; max-width: 420px; text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+  }
+  .s3-check { font-size: 56px; margin-bottom: 16px; }
+  .s3-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; }
+  .s3-msg { font-size: 15px; color: var(--muted); line-height: 1.7; }
+  .s3-close { margin-top: 28px; padding: 12px 32px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Syne', sans-serif; }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; padding: 24px 20px; gap: 32px; }
+    .left-col { display: none; }
+    header { padding: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-3">Tra<span>X</span>fer</div>
+  <div class="header-meta">
+    <a href="#">How it works</a>
+    <a href="#">Coverage</a>
+    <a href="#">1300 XXX XXX</a>
+  </div>
+  <button class="header-cta" onclick="document.getElementById('step1-btn').scrollIntoView({behavior:'smooth'})">Get a Quote</button>
+</header>
+
+<div class="page">
+  <!-- LEFT -->
+  <div class="left-col">
+    <div class="brand-pill">🚛 Australian Truck Relocation</div>
+    <div class="left-headline">Move trucks<br><em>smarter.</em></div>
+    <p class="left-sub">TraXfer handles every detail of truck relocation across Australia — from your first call to final delivery. Fast, insured, stress-free.</p>
+
+    <!-- Map preview -->
+    <div class="map-launch-card" onclick="openMapModal()">
+      <div class="mlc-preview">
+        <svg class="mlc-svg" viewBox="0 0 340 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="340" height="180" fill="#1a2535"/>
+          <polygon class="mlc-state" points="20,20 73,20 73,27 79,36 81,54 83,107 79,121 73,134 63,143 50,148 38,147 27,140 20,126 17,98 16,58 17,37"/>
+          <polygon class="mlc-state" points="83,20 118,20 118,107 103,107 83,107 81,54 79,36 73,27 73,20"/>
+          <polygon class="mlc-state" points="118,20 162,20 168,36 172,55 171,88 166,106 158,120 147,130 134,133 124,130 118,107 118,20"/>
+          <polygon class="mlc-state" points="83,107 118,107 118,141 112,148 103,153 93,155 84,155 78,152 72,144 72,133 79,121 83,107"/>
+          <polygon class="mlc-state" points="118,107 147,130 152,140 148,154 140,160 127,163 112,162 107,155 107,141 118,141 118,107"/>
+          <polygon class="mlc-state" points="103,153 107,155 107,162 111,167 108,172 100,174 92,172 88,165 90,157 93,155"/>
+          <ellipse class="mlc-state" cx="128" cy="173" rx="13" ry="10"/>
+          <!-- Route Perth→Brisbane -->
+          <line class="mlc-route" x1="29" y1="116" x2="158" y2="106" style="stroke-dashoffset:0"/>
+          <circle class="mlc-dot active" cx="29" cy="116" r="5"/>
+          <circle class="mlc-dot active" cx="158" cy="106" r="5"/>
+          <text font-family="monospace" font-size="8" fill="rgba(255,255,255,0.4)" x="5" y="160">PERTH</text>
+          <text font-family="monospace" font-size="8" fill="rgba(255,255,255,0.4)" x="155" y="100">BRIS</text>
+        </svg>
+        <div class="mlc-overlay">
+          <div class="mlc-btn">🗺️ Open Route Planner</div>
+        </div>
+      </div>
+      <div class="mlc-footer">
+        <div class="mlc-route-display" id="mlc-route-text"><span>Click to plan your route</span></div>
+        <div class="mlc-dist" id="mlc-dist-text"></div>
+      </div>
+    </div>
+
+    <!-- USPs -->
+    <div class="usp-list">
+      <div class="usp-row">
+        <div class="usp-ico">🛡️</div>
+        <div class="usp-content">
+          <div class="usp-r-title">Fully Insured Transit</div>
+          <div class="usp-r-sub">Comprehensive cover for every vehicle, every kilometre of the journey.</div>
+        </div>
+      </div>
+      <div class="usp-row">
+        <div class="usp-ico">📋</div>
+        <div class="usp-content">
+          <div class="usp-r-title">Permit & Compliance Handled</div>
+          <div class="usp-r-sub">Oversize loads, overdimensional permits — we manage everything so you don't have to.</div>
+        </div>
+      </div>
+      <div class="usp-row">
+        <div class="usp-ico">⚡</div>
+        <div class="usp-content">
+          <div class="usp-r-title">2-Hour Quote Response</div>
+          <div class="usp-r-sub">Submit your request and receive a detailed quote within 2 business hours.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat3"><div class="stat3-num">3.2K+</div><div class="stat3-label">Relocated</div></div>
+      <div class="stat3"><div class="stat3-num">99.7%</div><div class="stat3-label">On-Time</div></div>
+      <div class="stat3"><div class="stat3-num">8+</div><div class="stat3-label">States</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: WIZARD -->
+  <div class="right-col">
+    <div class="form-card">
+      <div class="progress-bar"><div class="progress-fill" id="prog" style="width: 33%"></div></div>
+
+      <div class="step-header">
+        <div class="step-indicator">
+          <div class="si-step active" id="si-1">1</div>
+          <div class="si-line" id="sl-1"></div>
+          <div class="si-step" id="si-2">2</div>
+          <div class="si-line" id="sl-2"></div>
+          <div class="si-step" id="si-3">3</div>
+        </div>
+        <div>
+          <div class="step-name active" id="step-name">Your Details</div>
+        </div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="step-body">
+        <div class="step-panel active" id="step1">
+          <div class="sp-title">Let's get started</div>
+          <p class="sp-sub">Tell us who you are and where you're moving your truck. We'll handle the rest.</p>
+
+          <!-- Route selector -->
+          <div class="route-summary-box" onclick="openMapModal()" id="route-box">
+            <div class="rsb-icon">🗺️</div>
+            <div class="rsb-content">
+              <div class="rsb-title" id="rsb-title">Select your route</div>
+              <div class="rsb-sub" id="rsb-sub">Click to open the interactive map</div>
+            </div>
+            <div class="rsb-action" id="rsb-action">Open map →</div>
+          </div>
+          <input type="hidden" id="f3-pickup">
+          <input type="hidden" id="f3-dropoff">
+
+          <div class="ff-row">
+            <div class="ff"><label>First Name *</label><input type="text" id="f3-fname" placeholder="John"></div>
+            <div class="ff"><label>Last Name *</label><input type="text" id="f3-lname" placeholder="Smith"></div>
+          </div>
+          <div class="ff"><label>Company (optional)</label><input type="text" id="f3-company" placeholder="Smith Transport Pty Ltd"></div>
+          <div class="ff-row">
+            <div class="ff"><label>Phone Number *</label><input type="tel" id="f3-phone" placeholder="04XX XXX XXX"></div>
+            <div class="ff"><label>Email *</label><input type="email" id="f3-email" placeholder="you@company.com"></div>
+          </div>
+          <div class="ff">
+            <label>Preferred contact method</label>
+            <div class="radio-grid">
+              <div class="radio-btn selected" onclick="selectR(this,'contact','Call me')">📞 Call me</div>
+              <div class="radio-btn" onclick="selectR(this,'contact','Email me')">📧 Email me</div>
+              <div class="radio-btn" onclick="selectR(this,'contact','SMS/WhatsApp')">💬 SMS / WhatsApp</div>
+              <div class="radio-btn" onclick="selectR(this,'contact','Either')">🙆 Either is fine</div>
+            </div>
+            <input type="hidden" id="f3-contact" value="Call me">
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-panel" id="step2">
+          <div class="sp-title">About the vehicle</div>
+          <p class="sp-sub">The more detail you provide, the more accurate your quote will be.</p>
+
+          <div class="ff">
+            <label>Vehicle Type *</label>
+            <div class="radio-grid three">
+              <div class="radio-btn" onclick="selectR(this,'vtype','Rigid Truck')">🚛 Rigid Truck</div>
+              <div class="radio-btn" onclick="selectR(this,'vtype','Semi-Trailer')">🚚 Semi-Trailer</div>
+              <div class="radio-btn" onclick="selectR(this,'vtype','B-Double')">🚜 B-Double</div>
+              <div class="radio-btn" onclick="selectR(this,'vtype','Road Train')">🛻 Road Train</div>
+              <div class="radio-btn" onclick="selectR(this,'vtype','Refrigerated')">❄️ Refrigerated</div>
+              <div class="radio-btn" onclick="selectR(this,'vtype','Other')">⚙️ Other</div>
+            </div>
+            <input type="hidden" id="f3-vtype" value="">
+          </div>
+
+          <div class="ff-row">
+            <div class="ff"><label>Make</label><input type="text" id="f3-make" placeholder="Kenworth"></div>
+            <div class="ff"><label>Model</label><input type="text" id="f3-model" placeholder="T610SAR"></div>
+          </div>
+          <div class="ff-row">
+            <div class="ff"><label>Year</label><input type="number" id="f3-year" placeholder="2020"></div>
+            <div class="ff"><label>Weight (tonnes)</label><input type="number" id="f3-weight" placeholder="0.0" step="0.1"></div>
+          </div>
+          <div class="ff"><label>Dimensions (metres)</label></div>
+          <div class="ff-row3">
+            <div class="ff"><label>Length</label><input type="number" id="f3-len" placeholder="m" step="0.1"></div>
+            <div class="ff"><label>Width</label><input type="number" id="f3-wid" placeholder="m" step="0.1"></div>
+            <div class="ff"><label>Height</label><input type="number" id="f3-hgt" placeholder="m" step="0.1"></div>
+          </div>
+          <div class="ff">
+            <label>Running condition</label>
+            <div class="radio-grid">
+              <div class="radio-btn selected" onclick="selectR(this,'condition','Self-powered')">✅ Self-powered</div>
+              <div class="radio-btn" onclick="selectR(this,'condition','Non-running')">🔧 Non-running</div>
+            </div>
+            <input type="hidden" id="f3-condition" value="Self-powered">
+          </div>
+          <div class="ff">
+            <label>Oversize / overdimensional?</label>
+            <div class="radio-grid three">
+              <div class="radio-btn selected" onclick="selectR(this,'oversize','No')">No</div>
+              <div class="radio-btn" onclick="selectR(this,'oversize','Yes')">Yes</div>
+              <div class="radio-btn" onclick="selectR(this,'oversize','Unsure')">Unsure</div>
+            </div>
+            <input type="hidden" id="f3-oversize" value="No">
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step-panel" id="step3">
+          <div class="sp-title">Timing & details</div>
+          <p class="sp-sub">Almost done — just let us know your timing preferences and any special requirements.</p>
+
+          <div class="ff-row">
+            <div class="ff"><label>Preferred Pickup Date</label><input type="date" id="f3-date"></div>
+            <div class="ff">
+              <label>Date Flexibility</label>
+              <select id="f3-flex">
+                <option>Exact date required</option>
+                <option>± 1–2 days</option>
+                <option>± 1 week</option>
+                <option>Fully flexible</option>
+              </select>
+            </div>
+          </div>
+          <div class="ff">
+            <label>Service Level</label>
+            <div class="radio-grid three">
+              <div class="radio-btn selected" onclick="selectR(this,'priority','Standard')">Standard<br><small style="font-weight:400;color:var(--muted)">Regular route</small></div>
+              <div class="radio-btn" onclick="selectR(this,'priority','Expedited')">Expedited<br><small style="font-weight:400;color:var(--muted)">Priority slot</small></div>
+              <div class="radio-btn" onclick="selectR(this,'priority','Emergency')">Emergency<br><small style="font-weight:400;color:var(--muted)">ASAP dispatch</small></div>
+            </div>
+            <input type="hidden" id="f3-priority" value="Standard">
+          </div>
+          <div class="ff">
+            <label>Notes / Special Requirements</label>
+            <textarea id="f3-notes" placeholder="Any access restrictions, hazmat, insurance needs, preferred routes, special handling requirements..."></textarea>
+          </div>
+          <div style="background: var(--blue-light); border-radius: 8px; padding: 14px; display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 18px;">💡</span>
+            <div style="font-size: 13px; color: var(--blue); line-height: 1.5;">
+              <strong>What happens next:</strong> Our team receives your request instantly and will contact you via your preferred method within 2 business hours with a tailored quote.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NAV -->
+      <div class="step-nav">
+        <button class="btn-back" id="btn-back" onclick="stepBack()" style="display:none">← Back</button>
+        <div></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-next" id="btn-next" onclick="stepNext()">Continue →</button>
+          <button class="btn-submit" id="btn-submit" onclick="submitForm3()">✓ Submit Quote Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div class="map-modal" id="map-modal">
+  <div class="mm-box">
+    <div class="mm-header">
+      <div>
+        <div class="mm-title">Route Planner</div>
+        <div class="mm-sub" id="mm-sub">Click a city to set your pickup location</div>
+      </div>
+      <button class="mm-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div class="mm-route-bar">
+      <div class="mm-point">
+        <div class="mm-dot pickup"></div>
+        <div>
+          <div class="mm-point-text" id="mm-pu">Pickup location</div>
+          <div class="mm-point-sub">Click a city on the map</div>
+        </div>
+      </div>
+      <div class="mm-arrow-sep">→</div>
+      <div class="mm-point">
+        <div class="mm-dot dropoff"></div>
+        <div>
+          <div class="mm-point-text" id="mm-do">Drop-off location</div>
+          <div class="mm-point-sub">Then click a second city</div>
+        </div>
+      </div>
+    </div>
+    <div class="mm-body">
+      <svg id="map3" viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg">
+        <rect width="760" height="440" fill="#f0f5e8"/>
+        <!-- States -->
+        <polygon class="m3-state" points="55,55 210,55 210,72 225,90 231,132 235,252 225,285 210,317 182,340 145,354 108,352 79,332 59,300 50,258 43,182 43,108"/>
+        <polygon class="m3-state" points="235,55 335,55 335,252 295,252 235,252 231,132 225,90 210,72 210,55"/>
+        <polygon class="m3-state" points="335,55 460,55 478,100 487,156 483,209 469,251 445,285 415,308 381,320 356,314 335,252 335,55"/>
+        <polygon class="m3-state" points="235,252 335,252 335,337 320,352 299,364 272,369 250,368 232,360 220,344 218,312 225,285 235,252"/>
+        <polygon class="m3-state" points="335,252 381,320 394,342 385,369 366,385 336,392 303,392 284,374 279,352 299,364 320,352 335,337 335,252"/>
+        <polygon class="m3-state" points="299,364 303,392 311,410 302,420 282,424 263,418 254,405 258,390 270,378 279,352"/>
+        <ellipse class="m3-state" cx="355" cy="428" rx="32" ry="25"/>
+
+        <line id="m3-route" class="m3-route" x1="0" y1="0" x2="0" y2="0" style="display:none"/>
+
+        <!-- Cities -->
+        <g class="m3-city" data-city="Perth" data-x="82" data-y="276">
+          <circle class="m3-dot" cx="82" cy="276" r="6"/><text class="m3-label" x="95" y="280">Perth</text>
+        </g>
+        <g class="m3-city" data-city="Darwin" data-x="265" data-y="76">
+          <circle class="m3-dot" cx="265" cy="76" r="6"/><text class="m3-label" x="278" y="80">Darwin</text>
+        </g>
+        <g class="m3-city" data-city="Adelaide" data-x="278" data-y="335">
+          <circle class="m3-dot" cx="278" cy="335" r="6"/><text class="m3-label" x="291" y="331">Adelaide</text>
+        </g>
+        <g class="m3-city" data-city="Melbourne" data-x="343" cy="382" data-x="343" data-y="382">
+          <circle class="m3-dot" cx="343" cy="382" r="6"/><text class="m3-label" x="352" y="378">Melbourne</text>
+        </g>
+        <g class="m3-city" data-city="Sydney" data-x="412" data-y="348">
+          <circle class="m3-dot" cx="412" cy="348" r="6"/><text class="m3-label" x="424" y="352">Sydney</text>
+        </g>
+        <g class="m3-city" data-city="Brisbane" data-x="451" data-y="252">
+          <circle class="m3-dot" cx="451" cy="252" r="6"/><text class="m3-label" x="463" y="248">Brisbane</text>
+        </g>
+        <g class="m3-city" data-city="Alice Springs" data-x="283" data-y="205">
+          <circle class="m3-dot" cx="283" cy="205" r="6"/><text class="m3-label" x="296" y="201">Alice Springs</text>
+        </g>
+        <g class="m3-city" data-city="Cairns" data-x="435" data-y="100">
+          <circle class="m3-dot" cx="435" cy="100" r="6"/><text class="m3-label" x="448" y="96">Cairns</text>
+        </g>
+        <g class="m3-city" data-city="Hobart" data-x="355" data-y="428">
+          <circle class="m3-dot" cx="355" cy="428" r="6"/><text class="m3-label" x="368" y="426">Hobart</text>
+        </g>
+      </svg>
+      <div class="mm-hint" id="mm-hint">📍 Click a city to set pickup</div>
+    </div>
+    <div class="mm-footer">
+      <div class="mm-dist">Distance: <span id="mm-km">—</span></div>
+      <button class="mm-confirm" id="mm-confirm" onclick="confirmRoute()" disabled style="opacity:0.4">Confirm Route →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="sov3" id="sov3">
+  <div class="s3-card">
+    <div class="s3-check">✅</div>
+    <div class="s3-title">Quote Request Sent!</div>
+    <p class="s3-msg">Your request has been submitted. Our team will be in touch within 2 business hours with a tailored quote — via your preferred contact method.</p>
+    <button class="s3-close" onclick="document.getElementById('sov3').classList.remove('show')">Done</button>
+  </div>
+</div>
+
+<script>
+  const cc3 = {
+    'Perth': { lat: -31.9, lng: 115.9 },
+    'Darwin': { lat: -12.5, lng: 130.8 },
+    'Adelaide': { lat: -34.9, lng: 138.6 },
+    'Melbourne': { lat: -37.8, lng: 145.0 },
+    'Sydney': { lat: -33.9, lng: 151.2 },
+    'Brisbane': { lat: -27.5, lng: 153.0 },
+    'Alice Springs': { lat: -23.7, lng: 133.9 },
+    'Cairns': { lat: -16.9, lng: 145.8 },
+    'Hobart': { lat: -42.9, lng: 147.3 }
+  };
+
+  function hv3(lat1, lng1, lat2, lng2) {
+    const R = 6371, dl = (lat2-lat1)*Math.PI/180, dg = (lng2-lng1)*Math.PI/180;
+    const a = Math.sin(dl/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dg/2)**2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  }
+
+  // WIZARD
+  let curStep = 1;
+  const steps = ['step1','step2','step3'];
+  const stepNames = ['Your Details','Vehicle Info','Timing & Notes'];
+
+  function updateStep() {
+    steps.forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.classList.toggle('active', i+1 === curStep);
+      const si = document.getElementById('si-'+(i+1));
+      if (si) {
+        si.classList.toggle('active', i+1 === curStep);
+        si.classList.toggle('done', i+1 < curStep);
+        if (i+1 < curStep) si.textContent = '✓'; else si.textContent = i+1;
+      }
+      if (i < 2) {
+        const sl = document.getElementById('sl-'+(i+1));
+        if (sl) sl.classList.toggle('done', i+1 < curStep);
+      }
+    });
+    document.getElementById('prog').style.width = (curStep/3*100)+'%';
+    document.getElementById('step-name').textContent = stepNames[curStep-1];
+    document.getElementById('btn-back').style.display = curStep > 1 ? 'block' : 'none';
+    document.getElementById('btn-next').style.display = curStep < 3 ? 'flex' : 'none';
+    document.getElementById('btn-submit').classList.toggle('show', curStep === 3);
+  }
+
+  function stepNext() {
+    if (curStep === 1) {
+      const req = ['f3-fname','f3-lname','f3-phone','f3-email'];
+      let ok = true;
+      req.forEach(id => { const el = document.getElementById(id); if (!el.value.trim()) { el.style.borderColor = 'var(--red)'; ok = false; } else el.style.borderColor = ''; });
+      if (!ok) { alert('Please fill in required fields.'); return; }
+    }
+    if (curStep < 3) { curStep++; updateStep(); }
+  }
+
+  function stepBack() { if (curStep > 1) { curStep--; updateStep(); } }
+
+  function selectR(el, group, val) {
+    el.closest('.ff').querySelectorAll('.radio-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('f3-'+group).value = val;
+  }
+
+  // MAP
+  let m3Step = 'pickup', m3pu = null, m3do = null, m3px, m3py, m3dx, m3dy;
+
+  function openMapModal() { document.getElementById('map-modal').classList.add('open'); }
+  function closeMapModal() { document.getElementById('map-modal').classList.remove('open'); }
+
+  document.querySelectorAll('.m3-city').forEach(city => {
+    city.addEventListener('click', function() {
+      const name = this.dataset.city;
+      const cx = parseFloat(this.dataset.x);
+      const cy = parseFloat(this.dataset.y);
+      const dot = this.querySelector('.m3-dot');
+
+      if (m3Step === 'pickup') {
+        document.querySelectorAll('.m3-dot').forEach(d => d.classList.remove('pickup','dropoff'));
+        document.querySelectorAll('.m3-label').forEach(l => l.classList.remove('active'));
+        m3pu = name; m3px = cx; m3py = cy;
+        dot.classList.add('pickup');
+        this.querySelector('.m3-label').classList.add('active');
+        document.getElementById('mm-pu').textContent = name;
+        m3do = null;
+        document.getElementById('mm-do').textContent = 'Drop-off location';
+        document.getElementById('m3-route').style.display = 'none';
+        document.getElementById('mm-km').textContent = '—';
+        document.getElementById('mm-confirm').disabled = true;
+        document.getElementById('mm-confirm').style.opacity = '0.4';
+        document.getElementById('mm-hint').textContent = '📍 Now click your drop-off city';
+        document.getElementById('mm-sub').textContent = 'Now click your drop-off location';
+        m3Step = 'dropoff';
+      } else {
+        if (name === m3pu) return;
+        m3do = name; m3dx = cx; m3dy = cy;
+        dot.classList.add('dropoff');
+        this.querySelector('.m3-label').classList.add('active');
+        document.getElementById('mm-do').textContent = name;
+        const line = document.getElementById('m3-route');
+        line.setAttribute('x1', m3px); line.setAttribute('y1', m3py);
+        line.setAttribute('x2', m3dx); line.setAttribute('y2', m3dy);
+        line.style.display = '';
+        const c1 = cc3[m3pu], c2 = cc3[name];
+        const km = hv3(c1.lat, c1.lng, c2.lat, c2.lng);
+        document.getElementById('mm-km').textContent = km.toLocaleString() + ' km (approx.)';
+        document.getElementById('mm-confirm').disabled = false;
+        document.getElementById('mm-confirm').style.opacity = '1';
+        document.getElementById('mm-hint').textContent = `✅ Route: ${m3pu} → ${name}`;
+        document.getElementById('mm-sub').textContent = `Route selected — confirm to continue`;
+        m3Step = 'pickup';
+      }
+    });
+  });
+
+  function confirmRoute() {
+    if (!m3pu || !m3do) return;
+    document.getElementById('f3-pickup').value = m3pu;
+    document.getElementById('f3-dropoff').value = m3do;
+    document.getElementById('rsb-title').textContent = m3pu + ' → ' + m3do;
+    document.getElementById('rsb-sub').textContent = 'Click to modify route';
+    document.getElementById('rsb-action').textContent = 'Change map →';
+    document.getElementById('mlc-route-text').textContent = m3pu + ' → ' + m3do;
+    const c1 = cc3[m3pu], c2 = cc3[m3do];
+    const km = hv3(c1.lat, c1.lng, c2.lat, c2.lng);
+    document.getElementById('mlc-dist-text').textContent = km.toLocaleString() + ' km';
+    closeMapModal();
+  }
+
+  function submitForm3() {
+    const pu = document.getElementById('f3-pickup').value;
+    const dr = document.getElementById('f3-dropoff').value;
+    if (!pu || !dr) { alert('Please select a route using the map.'); return; }
+    const body = `TraXfer Quote Request
+=======================
+Route: ${pu} → ${dr}
+
+Contact:
+Name: ${document.getElementById('f3-fname').value} ${document.getElementById('f3-lname').value}
+Company: ${document.getElementById('f3-company').value||'N/A'}
+Phone: ${document.getElementById('f3-phone').value}
+Email: ${document.getElementById('f3-email').value}
+Contact Pref: ${document.getElementById('f3-contact').value}
+
+Vehicle:
+Type: ${document.getElementById('f3-vtype').value||'N/A'}
+Make/Model: ${document.getElementById('f3-make').value} ${document.getElementById('f3-model').value}
+Year: ${document.getElementById('f3-year').value}
+Dimensions: ${document.getElementById('f3-len').value}L × ${document.getElementById('f3-wid').value}W × ${document.getElementById('f3-hgt').value}H (m)
+Weight: ${document.getElementById('f3-weight').value}t
+Condition: ${document.getElementById('f3-condition').value}
+Oversize: ${document.getElementById('f3-oversize').value}
+
+Shipment:
+Date: ${document.getElementById('f3-date').value}
+Flexibility: ${document.getElementById('f3-flex').value}
+Priority: ${document.getElementById('f3-priority').value}
+Notes: ${document.getElementById('f3-notes').value}`;
+
+    window.location.href = `mailto:quotes@traxfer.com.au?subject=Quote: ${pu} → ${dr}&body=${encodeURIComponent(body)}`;
+    document.getElementById('sov3').classList.add('show');
+  }
+</script>
+</body>
+</html>
